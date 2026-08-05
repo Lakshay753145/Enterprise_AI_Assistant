@@ -1,0 +1,85 @@
+# =============================================================================
+# Aerolloy Enterprise AI Assistant - backend image
+#
+# Two stages so the ~1.5 GB of build toolchain needed to compile psycopg and
+# the ML wheels never ships to production.
+# =============================================================================
+
+# --- Stage 1: build wheels ---------------------------------------------------
+FROM python:3.12-slim AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        libpq-dev \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY backend/requirements.txt .
+
+# CPU-only torch. The default wheel pulls ~2.5 GB of CUDA libraries that are
+# dead weight unless the host actually has a GPU; install those separately if
+# it does.
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN pip install --upgrade pip setuptools wheel \
+    && pip install --index-url https://download.pytorch.org/whl/cpu torch \
+    && pip install -r requirements.txt
+
+
+# --- Stage 2: runtime --------------------------------------------------------
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    HF_HOME=/home/app/.cache/huggingface \
+    TRANSFORMERS_VERBOSITY=error \
+    TOKENIZERS_PARALLELISM=false
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libpq5 \
+        # Docling's OCR and image handling
+        libgl1 \
+        libglib2.0-0 \
+        tesseract-ocr \
+        tesseract-ocr-eng \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /opt/venv /opt/venv
+
+# Never run as root.
+RUN useradd --create-home --shell /bin/bash app
+
+WORKDIR /app
+
+COPY --chown=app:app backend/ ./backend/
+COPY --chown=app:app alembic/ ./alembic/
+COPY --chown=app:app alembic.ini ./
+COPY --chown=app:app scripts/ ./scripts/
+
+RUN mkdir -p /app/uploads /app/logs /app/knowledge_base \
+             /home/app/.cache/huggingface /home/app/.cache/docling \
+    && chown -R app:app /app /home/app
+
+USER app
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=150s --retries=5 \
+    CMD curl -fsS http://localhost:8000/health || exit 1
+
+# One worker: the embedding model, reranker, and Docling converter each hold
+# hundreds of MB of weights, and every worker would load its own copy. Scale by
+# adding replicas behind nginx rather than by adding workers here.
+CMD ["uvicorn", "backend.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "1", \
+     "--timeout-keep-alive", "75", \
+     "--no-access-log"]

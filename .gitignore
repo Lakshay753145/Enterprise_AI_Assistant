@@ -1,0 +1,48 @@
+# ---- Secrets ----------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---- Python -----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---- Node -------------------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+
+# ---- Application data -------------------------------------------------------
+# Runtime artefacts. The audit and transcript archives are operational records,
+# not source - keep them out of version control.
+logs/
+uploads/
+vector_store/
+
+# Knowledge-base source documents are confidential company documentation and
+# must never be committed. Folder structure is kept via .gitkeep.
+knowledge_base/**
+!knowledge_base/**/
+!knowledge_base/**/.gitkeep
+
+# ---- OS / editor ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp

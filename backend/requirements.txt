@@ -1,0 +1,68 @@
+# ============================================================================
+# Aerolloy Technologies Limited - Enterprise AI Assistant
+# Backend dependencies
+#
+# Tested on Python 3.12. Ranges rather than hard pins so the resolver can pick
+# wheels that exist for your interpreter (torch in particular has no wheels for
+# some Python versions at some releases). For a fully reproducible production
+# deployment, run `pip freeze > requirements.lock.txt` after a good install and
+# deploy from the lock file.
+# ============================================================================
+
+# --- Web framework -----------------------------------------------------------
+fastapi>=0.115,<0.200
+uvicorn[standard]>=0.34,<1.0
+python-multipart>=0.0.20
+sse-starlette>=2.1,<3.0
+
+# --- Config / validation -----------------------------------------------------
+pydantic>=2.9,<3.0
+pydantic-settings>=2.6,<3.0
+python-dotenv>=1.0
+email-validator>=2.2
+
+# --- Database ----------------------------------------------------------------
+sqlalchemy>=2.0.36,<2.1
+alembic>=1.14,<2.0
+psycopg[binary,pool]>=3.2,<4.0
+pgvector>=0.3.6,<1.0
+greenlet>=3.1
+
+# --- Security ----------------------------------------------------------------
+passlib[bcrypt]>=1.7.4
+# passlib 1.7.4 reads bcrypt.__about__.__version__, which bcrypt 4.1+ removed.
+# Pinning <4.1 avoids the noisy AttributeError traceback on every hash call.
+bcrypt>=4.0,<4.1
+python-jose[cryptography]>=3.3,<4.0
+slowapi>=0.1.9
+
+# --- LangChain / LangGraph ---------------------------------------------------
+langchain>=0.3.14,<0.4
+langchain-core>=0.3.29,<0.4
+langchain-community>=0.3.14,<0.4
+langchain-ollama>=0.2.2,<0.4
+langchain-text-splitters>=0.3.5,<0.4
+langgraph>=0.2.60,<0.7
+
+# --- Document parsing (Docling) ----------------------------------------------
+docling>=2.15,<3.0
+docling-core>=2.12,<3.0
+pypdf>=5.1
+
+# --- Embeddings + reranking --------------------------------------------------
+# Installs torch transitively. On a GPU host, install the CUDA build of torch
+# FIRST so pip does not pull the CPU wheel:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu124
+sentence-transformers>=3.3,<6.0
+transformers>=4.45,<5.0
+
+# --- Utilities ---------------------------------------------------------------
+loguru>=0.7.3
+orjson>=3.10
+httpx>=0.27,<1.0
+tenacity>=9.0
+numpy>=1.26,<3.0
+
+# --- Testing -----------------------------------------------------------------
+pytest>=8.3
+pytest-asyncio>=0.24

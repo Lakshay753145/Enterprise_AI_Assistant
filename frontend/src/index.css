@@ -1,0 +1,228 @@
+@import url("https://rsms.me/inter/inter.css");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 20% 97%;
+    --foreground: 220 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    --primary: 354 82% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 20% 92%;
+    --secondary-foreground: 220 25% 15%;
+
+    --muted: 210 20% 93%;
+    --muted-foreground: 215 16% 45%;
+
+    --accent: 354 90% 96%;
+    --accent-foreground: 354 82% 40%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 354 82% 48%;
+
+    --radius: 0.65rem;
+  }
+
+  .dark {
+    --background: 218 47% 8%;
+    --foreground: 213 31% 93%;
+
+    --card: 218 42% 11%;
+    --card-foreground: 213 31% 93%;
+
+    --popover: 218 42% 11%;
+    --popover-foreground: 213 31% 93%;
+
+    --primary: 213 58% 62%;
+    --primary-foreground: 218 47% 8%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 213 31% 93%;
+
+    --muted: 217 33% 15%;
+    --muted-foreground: 215 20% 62%;
+
+    --accent: 217 33% 19%;
+    --accent-foreground: 213 31% 93%;
+
+    --destructive: 0 63% 51%;
+    --destructive-foreground: 213 31% 93%;
+
+    --border: 217 30% 20%;
+    --input: 217 30% 20%;
+    --ring: 213 58% 55%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    @apply bg-primary/25;
+  }
+}
+
+@layer components {
+  /* ---- Scrollbars: thin and unobtrusive, visible on hover ---- */
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-border;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/40;
+  }
+
+  /* ---- Engineered-surface backdrop for the login screen ---- */
+  .blueprint-grid {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.5) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  .radial-glow {
+    background: radial-gradient(
+      ellipse 70% 55% at 50% -10%,
+      hsl(var(--primary) / 0.22),
+      transparent 70%
+    );
+  }
+
+  /* ---- Streaming caret ---- */
+  .stream-caret::after {
+    content: "";
+    @apply ml-0.5 inline-block h-[1.05em] w-[2px] translate-y-[0.15em] bg-primary;
+    animation: caret-blink 1s steps(2, start) infinite;
+  }
+
+  @keyframes caret-blink {
+    to {
+      visibility: hidden;
+    }
+  }
+
+  /* ---- Markdown answer body ---- */
+  .answer-prose {
+    @apply text-[0.9375rem] leading-[1.7];
+  }
+  .answer-prose > * + * {
+    @apply mt-3.5;
+  }
+  .answer-prose h1,
+  .answer-prose h2,
+  .answer-prose h3,
+  .answer-prose h4 {
+    @apply mt-6 font-semibold tracking-tight text-foreground first:mt-0;
+  }
+  .answer-prose h1 {
+    @apply text-lg;
+  }
+  .answer-prose h2 {
+    @apply text-base;
+  }
+  .answer-prose h3,
+  .answer-prose h4 {
+    @apply text-[0.9375rem];
+  }
+  .answer-prose ul {
+    @apply list-disc space-y-1.5 pl-5 marker:text-muted-foreground;
+  }
+  .answer-prose ol {
+    @apply list-decimal space-y-1.5 pl-5 marker:text-muted-foreground;
+  }
+  .answer-prose li > ul,
+  .answer-prose li > ol {
+    @apply mt-1.5;
+  }
+  .answer-prose strong {
+    @apply font-semibold text-foreground;
+  }
+  .answer-prose a {
+    @apply text-primary underline underline-offset-2 hover:opacity-80;
+  }
+  .answer-prose code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-[0.85em];
+  }
+  .answer-prose pre {
+    @apply overflow-x-auto rounded-lg border bg-muted/60 p-3.5;
+  }
+  .answer-prose pre code {
+    @apply bg-transparent p-0 text-[0.85em];
+  }
+  .answer-prose blockquote {
+    @apply border-l-2 border-primary/40 pl-4 italic text-muted-foreground;
+  }
+  .answer-prose table {
+    @apply w-full border-collapse overflow-hidden rounded-lg border text-sm;
+  }
+  .answer-prose th {
+    @apply border bg-muted/70 px-3 py-2 text-left font-semibold;
+  }
+  .answer-prose td {
+    @apply border px-3 py-2 align-top;
+  }
+  .answer-prose hr {
+    @apply border-border;
+  }
+
+  /* Inline [1] citation markers rendered by CitationMarker */
+  .citation-chip {
+    @apply mx-0.5 inline-flex h-[1.15rem] min-w-[1.15rem] items-center justify-center
+      rounded-[0.3rem] bg-primary/15 px-1 align-[0.05em] font-mono text-[0.7rem]
+      font-semibold text-primary ring-1 ring-inset ring-primary/25
+      transition-colors hover:bg-primary/25;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,150 @@
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL with pgvector
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: aerolloy-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-Enterprise_AI}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      # Bound to loopback: the database must not be reachable from the network.
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-Enterprise_AI}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks: [aerolloy]
+
+  # ---------------------------------------------------------------------------
+  # Ollama - local LLM inference
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aerolloy-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_models:/root/.ollama
+    ports:
+      - "127.0.0.1:11434:11434"
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 8
+      start_period: 40s
+    networks: [aerolloy]
+    # Uncomment on a GPU host. A 14B model on CPU is usable but slow;
+    # on a single 16 GB GPU it is comfortably interactive.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # ---------------------------------------------------------------------------
+  # Pull the models once, then exit
+  # ---------------------------------------------------------------------------
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: aerolloy-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Pulling ${OLLAMA_MODEL:-qwen2.5:14b-instruct} ..."
+        ollama pull ${OLLAMA_MODEL:-qwen2.5:14b-instruct}
+        echo "Pulling ${OLLAMA_FAST_MODEL:-qwen2.5:3b-instruct} ..."
+        ollama pull ${OLLAMA_FAST_MODEL:-qwen2.5:3b-instruct}
+        echo "Models ready."
+    restart: "no"
+    networks: [aerolloy]
+
+  # ---------------------------------------------------------------------------
+  # FastAPI backend
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    container_name: aerolloy-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      # Container-internal hostnames override whatever is in .env.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-Enterprise_AI}
+      SQL_AGENT_DATABASE_URL: postgresql+psycopg://ai_readonly:${READONLY_PASSWORD}@postgres:5432/${POSTGRES_DB:-Enterprise_AI}
+      OLLAMA_BASE_URL: http://ollama:11434
+      HOST: 0.0.0.0
+      PORT: "8000"
+    volumes:
+      # Uploaded documents, the on-disk transcript archive, and the audit trail
+      # must outlive the container.
+      - ../uploads:/app/uploads
+      - ../logs:/app/logs
+      - ../knowledge_base:/app/knowledge_base:ro
+      # Cache the embedding/reranker/Docling weights so a restart does not
+      # re-download ~2 GB.
+      - huggingface_cache:/home/app/.cache/huggingface
+      - docling_cache:/home/app/.cache/docling
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=5).status==200 else 1)\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 150s
+    networks: [aerolloy]
+
+  # ---------------------------------------------------------------------------
+  # nginx: serves the built frontend and reverse-proxies the API
+  # ---------------------------------------------------------------------------
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: aerolloy-web
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${WEB_PORT:-80}:80"
+    networks: [aerolloy]
+
+volumes:
+  postgres_data:
+  ollama_models:
+  huggingface_cache:
+  docling_cache:
+
+networks:
+  aerolloy:
+    driver: bridge
