@@ -1,4 +1,4 @@
-# Aerolloy Enterprise AI Assistant
+# Enterprise AI Assistant
 
 An internal, department-isolated knowledge assistant for **Aerolloy Technologies
 Limited**. Employees ask questions in plain language; the assistant answers
