@@ -1,6 +1,6 @@
 # Enterprise AI Assistant
 
-An internal, department-isolated knowledge assistant for **Aerolloy Technologies
+An internal, department-isolated knowledge assistant for ** Technologies
 Limited**. Employees ask questions in plain language; the assistant answers
 **only** from their own department's approved documentation, cites the source
 passage for every fact, and refuses when the answer is not documented.
@@ -467,6 +467,3 @@ until this passes.**
 
 ---
 
-## Licence
-
-Proprietary and confidential. (c) Aerolloy Technologies Limited. Internal use only.
